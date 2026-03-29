@@ -3,87 +3,48 @@
   function getRuntime() {
     return globalThis.browser || globalThis.chrome;
   }
-  var LOGIN_URL = "http://localhost:8888/login";
   function qs(id) {
     return document.getElementById(id);
   }
-  function setVisible(el, on) {
-    if (!el) return;
-    el.classList.toggle("hidden", !on);
-  }
-  async function sendMessage(msg) {
+  async function sendMessage(message) {
     const runtime = getRuntime();
     return new Promise((resolve) => {
-      runtime.runtime.sendMessage(msg, resolve);
+      runtime.runtime.sendMessage(message, resolve);
     });
   }
-  function renderStatus(res) {
-    const loading = qs("state-loading");
-    const connected = qs("state-connected");
-    const disconnected = qs("state-disconnected");
-    const playActivity = qs("play-activity");
-    const headerSpinner = qs("header-spinner");
+  async function refreshLastQuery() {
+    const status = qs("status");
+    const last = qs("last-query");
+    const res = await sendMessage({ type: "GET_LAST_QUERY" });
     if (!res?.ok) {
-      setVisible(loading, false);
-      setVisible(connected, false);
-      setVisible(disconnected, true);
-      setVisible(playActivity, false);
+      status.textContent = "Ready.";
+      last.textContent = "";
       return;
     }
-    setVisible(loading, false);
-    const showConnected = res.connected === true;
-    setVisible(connected, showConnected);
-    setVisible(disconnected, !showConnected);
-    if (showConnected) {
-      const nameEl = qs("account-name");
-      if (res.displayName) {
-        nameEl.textContent = res.displayName;
-        nameEl.classList.remove("hidden");
-      } else {
-        nameEl.textContent = "";
-        nameEl.classList.add("hidden");
-      }
-      const lastEl = qs("last-track");
-      if (res.lastTrack) {
-        lastEl.textContent = `Last played: ${res.lastTrack}`;
-        lastEl.classList.remove("hidden");
-      } else {
-        lastEl.textContent = "";
-        lastEl.classList.add("hidden");
-      }
-    }
-    const pending = res.playPending === true;
-    setVisible(playActivity, pending);
-    if (headerSpinner) {
-      headerSpinner.classList.toggle("spinning", pending);
-    }
+    status.textContent = "Ready.";
+    last.textContent = res.lastQuery ? `Last query: ${res.lastQuery}` : "";
   }
-  async function refreshStatus() {
-    const res = await sendMessage({ type: "GET_STATUS" });
-    renderStatus(res);
-  }
-  function wireStorageListener() {
-    const runtime = getRuntime();
+  qs("randomize")?.addEventListener("click", async () => {
+    const btn = qs("randomize");
+    const status = qs("status");
+    btn.disabled = true;
+    status.textContent = "Opening Spotify search...";
     try {
-      runtime.storage.onChanged.addListener(() => {
-        refreshStatus().catch(() => {
-        });
-      });
+      const res = await sendMessage({ type: "RANDOMIZE_AND_PLAY" });
+      if (res?.ok) {
+        status.textContent = "Sent. Random search opened.";
+        await refreshLastQuery();
+      } else {
+        status.textContent = res?.message || "Could not open Spotify.";
+      }
     } catch {
+      status.textContent = "Background worker not reachable.";
+    } finally {
+      btn.disabled = false;
     }
-  }
-  function openLogin() {
-    const runtime = getRuntime();
-    if (runtime.tabs?.create) {
-      runtime.tabs.create({ url: LOGIN_URL });
-      return;
-    }
-    globalThis.open(LOGIN_URL, "_blank", "noopener,noreferrer");
-  }
-  qs("connect")?.addEventListener("click", openLogin);
-  qs("reauth")?.addEventListener("click", openLogin);
-  wireStorageListener();
-  refreshStatus().catch(() => {
-    renderStatus({ ok: false });
+  });
+  refreshLastQuery().catch(() => {
+    const status = qs("status");
+    status.textContent = "Ready.";
   });
 })();

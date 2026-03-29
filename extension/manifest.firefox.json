@@ -9,15 +9,13 @@
     "128": "icons/icon128.png"
   },
   "permissions": [
+    "activeTab",
+    "tabs",
     "storage",
-    "https://open.spotify.com/*",
-    "https://api.spotify.com/*",
-    "https://accounts.spotify.com/*",
-    "http://localhost:8888/*",
-    "http://127.0.0.1:8888/*"
+    "https://open.spotify.com/*"
   ],
   "background": {
-    "scripts": ["injected-session.js", "background.js"],
+    "scripts": ["background.js"],
     "persistent": false
   },
   "browser_action": {
@@ -36,7 +34,7 @@
       "css": ["content.css"]
     }
   ],
-  "content_security_policy": "default-src 'self'; connect-src 'self' https://api.spotify.com https://accounts.spotify.com http://localhost:8888 http://127.0.0.1:8888; style-src 'self' 'unsafe-inline'; img-src 'self' data:",
+  "content_security_policy": "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:",
   "browser_specific_settings": {
     "gecko": {
       "id": "randomify@local",

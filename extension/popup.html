@@ -9,39 +9,9 @@
   <body>
     <main class="wrap">
       <h1 class="title">Randomify</h1>
-
-      <div id="state-connected" class="panel hidden">
-        <div class="row status-line">
-          <span class="dot dot-ok" aria-hidden="true">✅</span>
-          <span class="status-text">Connected to Spotify</span>
-        </div>
-        <p id="account-name" class="meta"></p>
-        <p id="last-track" class="last-track muted hidden"></p>
-        <p class="reauth-row">
-          <button type="button" class="linkish" id="reauth">Re-authenticate</button>
-        </p>
-      </div>
-
-      <div id="state-disconnected" class="panel hidden">
-        <div class="row status-line">
-          <span class="dot dot-bad" aria-hidden="true">❌</span>
-          <span class="status-text">Not connected</span>
-        </div>
-        <button id="connect" type="button" class="btn primary">Connect Spotify</button>
-        <p class="hint">Run <code>npm run auth</code> in the project folder first, or use Connect if the server is running.</p>
-      </div>
-
-      <div id="state-loading" class="panel">
-        <div class="row subtle">
-          <span class="spinner" id="header-spinner" aria-hidden="true"></span>
-          <span class="muted">Checking status…</span>
-        </div>
-      </div>
-
-      <div id="play-activity" class="play-activity hidden">
-        <span class="spinner small" aria-hidden="true"></span>
-        <span class="muted small">Picking a track…</span>
-      </div>
+      <button id="randomize" type="button" class="btn primary">Randomize</button>
+      <p id="status" class="hint">Ready.</p>
+      <p id="last-query" class="hint"></p>
     </main>
     <script src="popup.js"></script>
   </body>
