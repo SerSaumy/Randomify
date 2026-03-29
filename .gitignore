@@ -16,6 +16,7 @@ dist/
 # OAuth and tokens (never commit)
 server/data/
 .tokens.json
+extension/injected-session.js
 
 # Logs and diagnostics
 *.log

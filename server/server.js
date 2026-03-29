@@ -60,7 +60,13 @@ function cors(res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 }
 
-export function createApp() {
+/**
+ * @param {object} [options]
+ * @param {(info?: object) => void} [options.onAuthSuccess] Called after tokens are saved (OAuth code exchange OK).
+ * @param {(err: Error) => void} [options.onAuthFailure] Called on OAuth errors or token exchange failure.
+ */
+export function createApp(options = {}) {
+  const { onAuthSuccess, onAuthFailure } = options;
   const app = express();
   app.use(express.json());
 
@@ -96,11 +102,17 @@ export function createApp() {
     const clientId = process.env.SPOTIFY_CLIENT_ID;
     const { code, state, error } = req.query;
     if (error) {
+      if (onAuthFailure) {
+        onAuthFailure(new Error(`Spotify authorization error: ${error}`));
+      }
       res.status(400).send(`Authorization error: ${error}`);
       return;
     }
     const entry = state && oauthStates.get(state);
     if (!code || !entry) {
+      if (onAuthFailure) {
+        onAuthFailure(new Error('Invalid OAuth state or missing code. Start again from /login.'));
+      }
       res.status(400).send('Invalid OAuth state or missing code. Start again from /login.');
       return;
     }
@@ -120,12 +132,18 @@ export function createApp() {
         client_id: clientId,
         scope: tokenPayload.scope,
       });
+      if (onAuthSuccess) {
+        onAuthSuccess();
+      }
       res.send(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Randomify</title></head>
 <body style="font-family:system-ui;padding:2rem;">
 <h1>Connected</h1>
-<p>You can close this tab and use the extension popup to import tokens, or rely on automatic sync.</p>
+<p>You can close this tab. Randomify has saved your tokens.</p>
 </body></html>`);
     } catch (e) {
+      if (onAuthFailure) {
+        onAuthFailure(e);
+      }
       res.status(500).send(`Token exchange failed: ${e.message}`);
     }
   });

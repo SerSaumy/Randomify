@@ -3,6 +3,7 @@
  * Spotify API orchestration, and deduplication persistence.
  */
 
+import { maybeBootstrapSession } from './bootstrap-session.js';
 import { refreshTokensInExtension } from '../../lib/token-refresh.js';
 import {
   spotifyGet,
@@ -29,6 +30,10 @@ const STORAGE_KEYS = {
   dedup: 'sts_dedup_state',
   genreSeeds: 'sts_genre_seeds',
   genreSeedsAt: 'sts_genre_seeds_at',
+  needsAuth: 'sts_needs_auth',
+  displayName: 'sts_display_name',
+  lastTrack: 'sts_last_track',
+  playPending: 'sts_play_pending',
 };
 
 const SESSION_URLS = [
@@ -86,7 +91,9 @@ async function getValidAccessToken() {
   const expiresAt = s[STORAGE_KEYS.expiresAt] || 0;
 
   if (!clientId || !refreshToken) {
-    throw new Error('Not connected. Import a session from the local token server using the extension popup.');
+    const err = new Error('Not connected');
+    err.code = 'NOT_CONNECTED';
+    throw err;
   }
 
   if (accessToken && Date.now() < expiresAt - TOKEN_SKEW_MS) {
@@ -107,6 +114,41 @@ async function getValidAccessToken() {
   });
   return nextAccess;
 }
+
+async function refreshProfileDisplayName() {
+  try {
+    const token = await getValidAccessToken();
+    const res = await spotifyGet(token, '/me', undefined, {});
+    const j = await parseJsonSafe(res);
+    if (res.ok && j?.display_name) {
+      await saveStorage({
+        [STORAGE_KEYS.displayName]: sanitizeDisplayText(j.display_name),
+      });
+    }
+  } catch {
+    /* silent */
+  }
+}
+
+async function healthCheckTokens() {
+  try {
+    await getValidAccessToken();
+    await saveStorage({ [STORAGE_KEYS.needsAuth]: false });
+    await refreshProfileDisplayName();
+  } catch {
+    await saveStorage({ [STORAGE_KEYS.needsAuth]: true });
+  }
+}
+
+const initPromise = (async () => {
+  await maybeBootstrapSession({
+    loadStorage,
+    saveStorage,
+    STORAGE_KEYS,
+    globalObj: globalThis,
+  });
+  await healthCheckTokens();
+})();
 
 /**
  * @param {string} token
@@ -252,6 +294,7 @@ async function runTrueRandomFlow() {
       dedup = recordSuccessfulPlay(dedup, candidate.uri, candidate.artistId);
       await saveStorage({
         [STORAGE_KEYS.dedup]: dedup,
+        [STORAGE_KEYS.lastTrack]: sanitizeDisplayText(candidate.name),
       });
       return {
         ok: true,
@@ -347,7 +390,9 @@ async function importSessionFromServer() {
         [STORAGE_KEYS.accessToken]: data.access_token,
         [STORAGE_KEYS.refreshToken]: data.refresh_token,
         [STORAGE_KEYS.expiresAt]: data.expires_at || 0,
+        [STORAGE_KEYS.needsAuth]: false,
       });
+      await refreshProfileDisplayName();
       return { ok: true };
     } catch (e) {
       lastErr = e;
@@ -361,9 +406,23 @@ async function importSessionFromServer() {
 
 getApi().runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message?.type === 'TRUE_RANDOM_PLAY') {
-    runTrueRandomFlow()
-      .then(sendResponse)
-      .catch((e) => sendResponse({ ok: false, code: 'ERROR', message: e.message || String(e) }));
+    (async () => {
+      await initPromise;
+      await saveStorage({ [STORAGE_KEYS.playPending]: true });
+      try {
+        const out = await runTrueRandomFlow();
+        sendResponse(out);
+      } catch (e) {
+        const code = e?.code === 'NOT_CONNECTED' ? 'NOT_CONNECTED' : 'ERROR';
+        sendResponse({
+          ok: false,
+          code,
+          message: e?.message || String(e),
+        });
+      } finally {
+        await saveStorage({ [STORAGE_KEYS.playPending]: false });
+      }
+    })();
     return true;
   }
   if (message?.type === 'IMPORT_SESSION') {
@@ -373,12 +432,25 @@ getApi().runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true;
   }
   if (message?.type === 'GET_STATUS') {
-    loadStorage()
-      .then((st) => {
-        const connected = Boolean(st[STORAGE_KEYS.refreshToken] && st[STORAGE_KEYS.clientId]);
-        sendResponse({ ok: true, connected });
-      })
-      .catch(() => sendResponse({ ok: false }));
+    (async () => {
+      await initPromise;
+      try {
+        const st = await loadStorage();
+        const hasTokens = Boolean(st[STORAGE_KEYS.refreshToken] && st[STORAGE_KEYS.clientId]);
+        const needsFlag = st[STORAGE_KEYS.needsAuth] === true;
+        const connected = hasTokens && !needsFlag;
+        sendResponse({
+          ok: true,
+          connected,
+          displayName: st[STORAGE_KEYS.displayName] || null,
+          lastTrack: st[STORAGE_KEYS.lastTrack] || null,
+          playPending: st[STORAGE_KEYS.playPending] === true,
+          needsAuth: needsFlag || !hasTokens,
+        });
+      } catch {
+        sendResponse({ ok: false });
+      }
+    })();
     return true;
   }
   return false;

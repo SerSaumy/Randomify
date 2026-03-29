@@ -1,43 +1,104 @@
 /**
- * Popup UI: connection status and one click import from the local token server.
+ * Popup: connection status, re-auth links, last played track.
  */
 
 function getRuntime() {
   return globalThis.browser || globalThis.chrome;
 }
 
-function setStatus(text) {
-  const el = document.getElementById('status');
-  if (el) {
-    el.textContent = text;
+const LOGIN_URL = 'http://localhost:8888/login';
+
+function qs(id) {
+  return document.getElementById(id);
+}
+
+function setVisible(el, on) {
+  if (!el) return;
+  el.classList.toggle('hidden', !on);
+}
+
+async function sendMessage(msg) {
+  const runtime = getRuntime();
+  return new Promise((resolve) => {
+    runtime.runtime.sendMessage(msg, resolve);
+  });
+}
+
+function renderStatus(res) {
+  const loading = qs('state-loading');
+  const connected = qs('state-connected');
+  const disconnected = qs('state-disconnected');
+  const playActivity = qs('play-activity');
+  const headerSpinner = qs('header-spinner');
+
+  if (!res?.ok) {
+    setVisible(loading, false);
+    setVisible(connected, false);
+    setVisible(disconnected, true);
+    setVisible(playActivity, false);
+    return;
+  }
+
+  setVisible(loading, false);
+  const showConnected = res.connected === true;
+  setVisible(connected, showConnected);
+  setVisible(disconnected, !showConnected);
+
+  if (showConnected) {
+    const nameEl = qs('account-name');
+    if (res.displayName) {
+      nameEl.textContent = res.displayName;
+      nameEl.classList.remove('hidden');
+    } else {
+      nameEl.textContent = '';
+      nameEl.classList.add('hidden');
+    }
+    const lastEl = qs('last-track');
+    if (res.lastTrack) {
+      lastEl.textContent = `Last played: ${res.lastTrack}`;
+      lastEl.classList.remove('hidden');
+    } else {
+      lastEl.textContent = '';
+      lastEl.classList.add('hidden');
+    }
+  }
+
+  const pending = res.playPending === true;
+  setVisible(playActivity, pending);
+  if (headerSpinner) {
+    headerSpinner.classList.toggle('spinning', pending);
   }
 }
 
 async function refreshStatus() {
+  const res = await sendMessage({ type: 'GET_STATUS' });
+  renderStatus(res);
+}
+
+function wireStorageListener() {
   const runtime = getRuntime();
-  const res = await new Promise((resolve) => {
-    runtime.runtime.sendMessage({ type: 'GET_STATUS' }, resolve);
-  });
-  if (res?.ok && res.connected) {
-    setStatus('Connected: tokens are stored in the extension.');
-  } else {
-    setStatus('Not connected: import a session from the local server.');
+  try {
+    runtime.storage.onChanged.addListener(() => {
+      refreshStatus().catch(() => {});
+    });
+  } catch {
+    /* ignore */
   }
 }
 
-document.getElementById('import')?.addEventListener('click', async () => {
-  setStatus('Importing…');
+function openLogin() {
   const runtime = getRuntime();
-  const res = await new Promise((resolve) => {
-    runtime.runtime.sendMessage({ type: 'IMPORT_SESSION' }, resolve);
-  });
-  if (res?.ok) {
-    setStatus('Imported successfully.');
-  } else {
-    setStatus(res?.error || 'Import failed. Is the server running on port 8888?');
+  if (runtime.tabs?.create) {
+    runtime.tabs.create({ url: LOGIN_URL });
+    return;
   }
-});
+  globalThis.open(LOGIN_URL, '_blank', 'noopener,noreferrer');
+}
 
+qs('connect')?.addEventListener('click', openLogin);
+qs('reauth')?.addEventListener('click', openLogin);
+
+wireStorageListener();
 refreshStatus().catch(() => {
-  setStatus('Could not read extension status.');
+  renderStatus({ ok: false });
 });

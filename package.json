@@ -5,10 +5,11 @@
   "type": "module",
   "scripts": {
     "setup": "node server/setup.js",
+    "auth": "node server/auth.js",
+    "build": "node scripts/build.mjs",
     "start": "node server/server.js",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "test:randomness": "node scripts/test-randomness-real.js",
-    "build": "node scripts/build.mjs",
     "lint": "eslint extension/src lib server scripts tests --ext .js,.mjs"
   },
   "keywords": [
@@ -22,7 +23,8 @@
   "license": "MIT",
   "dependencies": {
     "dotenv": "^16.4.5",
-    "express": "^4.21.0"
+    "express": "^4.21.0",
+    "open": "^11.0.0"
   },
   "devDependencies": {
     "@jest/globals": "^29.7.0",

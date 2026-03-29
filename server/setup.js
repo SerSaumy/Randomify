@@ -1,13 +1,12 @@
 /**
- * First time setup: collects Spotify app credentials and explains the dashboard steps.
- * OAuth runs through the local server at http://localhost:8888/login after .env exists.
+ * First-time setup: collects Spotify Client ID and writes .env
+ * (OAuth runs separately via npm run auth).
  */
 
 import fs from 'fs';
 import path from 'path';
 import readline from 'readline';
 import { fileURLToPath } from 'url';
-import { spawn } from 'child_process';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.join(__dirname, '..');
@@ -30,27 +29,18 @@ function writeEnv(clientId, clientSecret) {
   fs.writeFileSync(envPath, lines.join('\n'), 'utf8');
 }
 
-function openBrowser(url) {
-  const { platform } = process;
-  if (platform === 'win32') {
-    spawn('cmd', ['/c', 'start', '', url], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
-    return;
-  }
-  const cmd = platform === 'darwin' ? 'open' : 'xdg-open';
-  spawn(cmd, [url], { detached: true, stdio: 'ignore' }).unref();
-}
-
 async function main() {
   console.log('');
   console.log('Randomify: setup');
   console.log('---------------------------');
   console.log('');
-  console.log('1. Open the Spotify Developer Dashboard in your browser:');
+  console.log('1. Open the Spotify Developer Dashboard:');
   console.log('   https://developer.spotify.com/dashboard');
   console.log('');
-  console.log('2. Create an app. Set the Redirect URI to exactly:');
+  console.log('2. Create an app. Add Redirect URI (exactly):');
   console.log('   http://localhost:8888/callback');
-  console.log('   Save the app, then copy the Client ID and Client Secret.');
+  console.log('');
+  console.log('3. Copy the Client ID (Client Secret is optional for PKCE).');
   console.log('');
 
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
@@ -63,27 +53,16 @@ async function main() {
   }
 
   const clientSecret = (
-    await question(rl, 'Paste your Client Secret (optional for PKCE). Press Enter to skip: ')
+    await question(rl, 'Paste your Client Secret (optional). Press Enter to skip: ')
   ).trim();
 
   writeEnv(clientId, clientSecret);
+  rl.close();
 
   console.log('');
   console.log(`Saved credentials to ${envPath}`);
   console.log('');
-  console.log('3. Start the token server in another terminal: npm start');
-  console.log('4. When the server is running, this script will open the login page.');
-  console.log('');
-
-  await question(rl, 'Press Enter when the server is listening on port 8888... ');
-  rl.close();
-
-  const loginUrl = 'http://localhost:8888/login';
-  console.log(`Opening ${loginUrl}`);
-  openBrowser(loginUrl);
-  console.log('');
-  console.log('After you approve access, tokens are stored under server/data/tokens.json.');
-  console.log('Use the extension popup action "Import session from local server" to copy tokens into the extension.');
+  console.log('Next: run npm run auth (browser opens for Spotify login; extension builds when done).');
   console.log('');
 }
 

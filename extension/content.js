@@ -74,6 +74,8 @@
         if (res?.ok) {
           const name = res.trackName || "Unknown track";
           showToast(`Now playing: ${name}`, "success");
+        } else if (res?.code === "NOT_CONNECTED") {
+          showToast("Randomify not set up yet. Run `npm run auth` in the project folder, then reload this page.", "error");
         } else {
           showToast(res?.message || "Something went wrong.", "error");
         }

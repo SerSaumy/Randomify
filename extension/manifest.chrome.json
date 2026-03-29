@@ -17,7 +17,7 @@
     "http://127.0.0.1:8888/*"
   ],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background-entry.js"
   },
   "action": {
     "default_popup": "popup.html",

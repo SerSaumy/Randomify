@@ -17,7 +17,7 @@
     "http://127.0.0.1:8888/*"
   ],
   "background": {
-    "scripts": ["background.js"],
+    "scripts": ["injected-session.js", "background.js"],
     "persistent": false
   },
   "browser_action": {
