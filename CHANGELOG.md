@@ -11,3 +11,4 @@ Initial release under the Randomify name.
 - Random search query generation with anti-repetition logic
 - Content script auto-clicks a random Play button from Spotify search results
 - Jest test suite for randomness and deduplication logic
+- GitHub Releases publish `dist/randomify-chrome.zip` for easy download

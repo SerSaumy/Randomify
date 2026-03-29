@@ -19,6 +19,16 @@ It generates a random Spotify **search query**, navigates a tab to Spotify’s s
 
 ---
 
+## Install (recommended: GitHub Release zip)
+
+1. Download `randomify-chrome.zip` from the latest GitHub Release.
+2. Unzip it.
+3. Go to `chrome://extensions`
+4. Enable **Developer mode**
+5. Click **Load unpacked** → select the unzipped **`extension/`** folder.
+
+---
+
 ## Install (from source)
 
 ```bash
@@ -34,8 +44,12 @@ npm install
 ## How to use
 
 1. Open `open.spotify.com` and log in.
-2. Click the Randomify extension icon.
-3. Click **Randomize**.
+2. Click the **dice (🎲) button** added inside Spotify’s player controls.
+
+You can also use the extension popup as a fallback:
+
+1. Click the Randomify extension icon.
+2. Click **Randomize**.
 
 Randomify will open (or reuse) a Spotify tab, run a random search query, then automatically click Play on a random track result. A small toast in the page shows status.
 

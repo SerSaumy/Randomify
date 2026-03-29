@@ -1,4 +1,7 @@
+/* global chrome */
+
 const TOAST_ID = 'sts-toast';
+const BTN_ID = 'sts-true-random-btn';
 
 function showToast(message) {
   const t = document.getElementById(TOAST_ID);
@@ -23,6 +26,118 @@ function showToast(message) {
   setTimeout(() => el.remove(), 4000);
 }
 
+function findUiAnchor() {
+  const shuffle = document.querySelector('button[data-testid="control-button-shuffle"]');
+  if (shuffle?.parentElement) return shuffle.parentElement;
+  return document.querySelector('[data-testid="control-bar"]') || document.querySelector('footer') || null;
+}
+
+function setButtonLoading(btn, loading) {
+  if (loading) {
+    btn.classList.add('sts-spin');
+    btn.setAttribute('aria-busy', 'true');
+  } else {
+    btn.classList.remove('sts-spin');
+    btn.removeAttribute('aria-busy');
+  }
+}
+
+function createRandomifyButton() {
+  const btn = document.createElement('button');
+  btn.id = BTN_ID;
+  btn.type = 'button';
+  btn.className = 'sts-true-random';
+  btn.setAttribute('aria-label', 'Randomify');
+  btn.title = 'Randomify — True Random';
+  const span = document.createElement('span');
+  span.className = 'sts-dice';
+  span.setAttribute('aria-hidden', 'true');
+  span.textContent = String.fromCodePoint(0x1f3b2);
+  btn.appendChild(span);
+  return btn;
+}
+
+function ensureInjectedButton() {
+  if (document.getElementById(BTN_ID)) return;
+  const anchor = findUiAnchor();
+  if (!anchor) return;
+
+  const btn = createRandomifyButton();
+  btn.addEventListener('click', async () => {
+    setButtonLoading(btn, true);
+    showToast('Randomify: Searching...');
+    chrome.runtime.sendMessage({ type: 'RANDOMIZE_AND_PLAY' }, (res) => {
+      if (!res?.ok) showToast('Randomify: Failed to start.');
+      setButtonLoading(btn, false);
+    });
+  });
+
+  const shuffle = anchor.querySelector?.('button[data-testid="control-button-shuffle"]');
+  if (shuffle) shuffle.insertAdjacentElement('afterend', btn);
+  else anchor.appendChild(btn);
+}
+
+function sendToBackground(message) {
+  try {
+    chrome.runtime.sendMessage(message);
+  } catch {
+    // ignore
+  }
+}
+
+function isPausedPlayButton(btn) {
+  const aria = (btn.getAttribute('aria-label') || '').toLowerCase();
+  return aria.startsWith('play');
+}
+
+function clickWithFallback(target) {
+  const rect = target.getBoundingClientRect();
+  const x = rect.left + rect.width / 2;
+  const y = rect.top + rect.height / 2;
+  const opts = {
+    bubbles: true,
+    cancelable: true,
+    view: window,
+    clientX: x,
+    clientY: y,
+  };
+  const down = new PointerEvent('pointerdown', {
+    ...opts,
+    pointerId: 1,
+    pointerType: 'mouse',
+    isPrimary: true,
+  });
+  const up = new PointerEvent('pointerup', {
+    ...opts,
+    pointerId: 1,
+    pointerType: 'mouse',
+    isPrimary: true,
+  });
+  const click = new MouseEvent('click', opts);
+  target.dispatchEvent(down);
+  target.dispatchEvent(up);
+  target.dispatchEvent(click);
+}
+
+function detectAdOrLimit() {
+  const text = (document.body?.innerText || '').toLowerCase();
+  const adDetected = text.includes('advertisement') || text.includes('ad break');
+  const limitDetected = (
+    text.includes('daily limit')
+    || text.includes('on-demand')
+    || text.includes('can only play')
+    || (text.includes('shuffle') && text.includes('free'))
+  );
+  return { adDetected, limitDetected };
+}
+
+function setMutedForAd(muted) {
+  const tabId = Number(new URLSearchParams(window.location.search).get('randomify_tab_id'));
+  if (Number.isFinite(tabId)) {
+    sendToBackground({ type: 'RANDOMIFY_TAB_MUTE', tabId, muted });
+  }
+}
+
 function removeAutoPlayFlag() {
   const url = new URL(window.location.href);
   url.searchParams.delete('randomify_auto_play');
@@ -30,32 +145,40 @@ function removeAutoPlayFlag() {
 }
 
 function attemptAutoPlay() {
-  let attempts = 0;
-  const maxAttempts = 15; // Wait up to ~7.5 seconds
+  let done = false;
+  let mutedForAd = false;
 
-  const interval = setInterval(() => {
-    attempts += 1;
-    const trackRows = document.querySelectorAll('div[data-testid="tracklist-row"]');
+  function tick() {
+    if (done) return;
 
-    if (trackRows.length > 3) {
-      clearInterval(interval);
-      const randomIndex = Math.floor(Math.random() * trackRows.length);
-      const selectedRow = trackRows[randomIndex];
-
-      const playBtn = selectedRow.querySelector('button[data-testid="play-button"], button[aria-label^="Play"]');
-      if (playBtn) {
-        playBtn.click();
-        showToast('Randomify: Playing track!');
-      } else {
-        const dblClickEvent = new MouseEvent('dblclick', { bubbles: true, cancelable: true, view: window });
-        selectedRow.dispatchEvent(dblClickEvent);
-        showToast('Randomify: Playing track!');
-      }
-    } else if (attempts >= maxAttempts) {
-      clearInterval(interval);
-      showToast('Randomify: Could not find tracks to play.');
+    const { adDetected, limitDetected } = detectAdOrLimit();
+    if (adDetected && !mutedForAd) {
+      mutedForAd = true;
+      setMutedForAd(true);
+    } else if (!adDetected && mutedForAd) {
+      mutedForAd = false;
+      setMutedForAd(false);
     }
-  }, 500);
+
+    if (limitDetected) {
+      done = true;
+      showToast("Randomify: Free limit reached. Can't force on-demand play.");
+      sendToBackground({ type: 'RANDOMIFY_DAILY_LIMIT' });
+      return;
+    }
+
+    const playBtn = document.querySelector('[data-testid="play-button"]');
+    if (playBtn && isPausedPlayButton(playBtn)) {
+      done = true;
+      clickWithFallback(playBtn);
+      showToast('Randomify: Playing track!');
+      return;
+    }
+
+    window.setTimeout(tick, 500);
+  }
+
+  tick();
 }
 
 function init() {
@@ -72,3 +195,19 @@ if (document.readyState === 'loading') {
 } else {
   init();
 }
+
+chrome.runtime?.onMessage?.addListener((message, _sender, sendResponse) => {
+  if (message?.type === 'RANDOMIFY_PING') {
+    sendResponse({ ok: true, ts: Date.now() });
+    return false;
+  }
+  return false;
+});
+
+// Keep the button mounted across Spotify SPA changes.
+const injectObserver = new MutationObserver(() => {
+  ensureInjectedButton();
+});
+injectObserver.observe(document.documentElement, { childList: true, subtree: true });
+
+ensureInjectedButton();

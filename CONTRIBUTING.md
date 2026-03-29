@@ -15,6 +15,14 @@ Thank you for improving Randomify. This document describes how we expect changes
 3. Run `npm test` and `npm run lint`.
 4. Open a pull request that explains the user impact and any tradeoffs you considered.
 
+## Releases (maintainers)
+
+We publish a downloadable zip for Chrome as a GitHub Release asset.
+
+- **Tag format**: `vX.Y.Z` (for example `v1.0.1`)
+- **What happens**: CI builds and uploads `dist/randomify-chrome.zip` to the Release
+- **Local check**: run `npm run build` and verify `dist/randomify-chrome.zip` exists
+
 ## Security
 
 Never commit real `.env` files, keys, or other secrets. Randomify does not require Spotify developer credentials or tokens.
