@@ -1,7 +1,7 @@
 {
   "name": "randomify",
-  "version": "1.0.0",
-  "description": "Randomify: unbiased random playback for the Spotify Web Player",
+  "version": "1.0.1",
+  "description": "Randomify: zero-setup random Spotify Web Player playback (DOM automation)",
   "type": "module",
   "scripts": {
     "build": "node scripts/build.mjs",

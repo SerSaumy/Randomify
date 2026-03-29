@@ -71,3 +71,16 @@
 .sts-toast-fade {
   opacity: 0;
 }
+
+.sts-floating {
+  position: fixed !important;
+  right: 20px;
+  bottom: 120px;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: #1db954;
+  color: #111;
+  z-index: 2147483645;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+}

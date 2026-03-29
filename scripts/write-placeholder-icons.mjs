@@ -18,9 +18,12 @@ export function writePlaceholderIcons() {
   if (!fs.existsSync(iconsDir)) {
     fs.mkdirSync(iconsDir, { recursive: true });
   }
-  fs.writeFileSync(path.join(iconsDir, 'icon16.png'), PNG_1PX);
-  fs.writeFileSync(path.join(iconsDir, 'icon48.png'), PNG_1PX);
-  fs.writeFileSync(path.join(iconsDir, 'icon128.png'), PNG_1PX);
+  const icon16 = path.join(iconsDir, 'icon16.png');
+  const icon48 = path.join(iconsDir, 'icon48.png');
+  const icon128 = path.join(iconsDir, 'icon128.png');
+  if (!fs.existsSync(icon16)) fs.writeFileSync(icon16, PNG_1PX);
+  if (!fs.existsSync(icon48)) fs.writeFileSync(icon48, PNG_1PX);
+  if (!fs.existsSync(icon128)) fs.writeFileSync(icon128, PNG_1PX);
   const svg = [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">',
@@ -28,7 +31,8 @@ export function writePlaceholderIcons() {
     '<text x="64" y="88" font-size="72" text-anchor="middle" fill="#111">R</text>',
     '</svg>',
   ].join('');
-  fs.writeFileSync(path.join(iconsDir, 'icon.svg'), svg);
+  const iconSvg = path.join(iconsDir, 'icon.svg');
+  if (!fs.existsSync(iconSvg)) fs.writeFileSync(iconSvg, svg);
 }
 
 const entryFile = process.argv[1] ? path.resolve(process.argv[1]) : '';

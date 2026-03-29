@@ -62,7 +62,8 @@ export async function runBuild(target = 'chrome') {
     archive.on('error', reject);
     archive.pipe(output);
 
-    const skipRoot = new Set(['src', 'manifest.chrome.json', 'manifest.firefox.json']);
+    // Keep built output (`src/`) in the release zip. Skip sources and build-only manifests.
+    const skipRoot = new Set(['src-src', 'manifest.chrome.json', 'manifest.firefox.json']);
 
     function addDirRecursive(relDir) {
       const absDir = path.join(extDir, relDir);

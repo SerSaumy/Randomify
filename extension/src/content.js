@@ -2,6 +2,8 @@
   // extension/src-src/content.js
   var TOAST_ID = "sts-toast";
   var BTN_ID = "sts-true-random-btn";
+  var BTN_FLOATING_ID = "sts-true-random-floating-btn";
+  var MAX_AUTORETRY = 2;
   function showToast(message) {
     const t = document.getElementById(TOAST_ID);
     if (t) t.remove();
@@ -53,11 +55,10 @@
     return btn;
   }
   function ensureInjectedButton() {
-    if (document.getElementById(BTN_ID)) return;
+    if (document.getElementById(BTN_ID) || document.getElementById(BTN_FLOATING_ID)) return;
     const anchor = findUiAnchor();
-    if (!anchor) return;
     const btn = createRandomifyButton();
-    btn.addEventListener("click", async () => {
+    btn.addEventListener("click", () => {
       setButtonLoading(btn, true);
       showToast("Randomify: Searching...");
       chrome.runtime.sendMessage({ type: "RANDOMIZE_AND_PLAY" }, (res) => {
@@ -65,19 +66,15 @@
         setButtonLoading(btn, false);
       });
     });
+    if (!anchor) {
+      btn.id = BTN_FLOATING_ID;
+      btn.classList.add("sts-floating");
+      document.body.appendChild(btn);
+      return;
+    }
     const shuffle = anchor.querySelector?.('button[data-testid="control-button-shuffle"]');
     if (shuffle) shuffle.insertAdjacentElement("afterend", btn);
     else anchor.appendChild(btn);
-  }
-  function sendToBackground(message) {
-    try {
-      chrome.runtime.sendMessage(message);
-    } catch {
-    }
-  }
-  function isPausedPlayButton(btn) {
-    const aria = (btn.getAttribute("aria-label") || "").toLowerCase();
-    return aria.startsWith("play");
   }
   function clickWithFallback(target) {
     const rect = target.getBoundingClientRect();
@@ -107,18 +104,6 @@
     target.dispatchEvent(up);
     target.dispatchEvent(click);
   }
-  function detectAdOrLimit() {
-    const text = (document.body?.innerText || "").toLowerCase();
-    const adDetected = text.includes("advertisement") || text.includes("ad break");
-    const limitDetected = text.includes("daily limit") || text.includes("on-demand") || text.includes("can only play") || text.includes("shuffle") && text.includes("free");
-    return { adDetected, limitDetected };
-  }
-  function setMutedForAd(muted) {
-    const tabId = Number(new URLSearchParams(window.location.search).get("randomify_tab_id"));
-    if (Number.isFinite(tabId)) {
-      sendToBackground({ type: "RANDOMIFY_TAB_MUTE", tabId, muted });
-    }
-  }
   function removeAutoPlayFlag() {
     const url = new URL(window.location.href);
     url.searchParams.delete("randomify_auto_play");
@@ -126,37 +111,51 @@
   }
   function attemptAutoPlay() {
     let done = false;
-    let mutedForAd = false;
-    function tick() {
+    const retries = Number(sessionStorage.getItem("randomify_retry") || "0");
+    const observer = new MutationObserver(() => {
       if (done) return;
-      const { adDetected, limitDetected } = detectAdOrLimit();
-      if (adDetected && !mutedForAd) {
-        mutedForAd = true;
-        setMutedForAd(true);
-      } else if (!adDetected && mutedForAd) {
-        mutedForAd = false;
-        setMutedForAd(false);
-      }
-      if (limitDetected) {
-        done = true;
-        showToast("Randomify: Free limit reached. Can't force on-demand play.");
-        sendToBackground({ type: "RANDOMIFY_DAILY_LIMIT" });
-        return;
-      }
-      const playBtn = document.querySelector('[data-testid="play-button"]');
-      if (playBtn && isPausedPlayButton(playBtn)) {
-        done = true;
-        clickWithFallback(playBtn);
+      const rows = [...document.querySelectorAll('div[data-testid="tracklist-row"]')];
+      if (rows.length < 4) return;
+      const selectedRow = rows[Math.floor(Math.random() * rows.length)];
+      const playBtn = selectedRow.querySelector('button[data-testid="play-button"], button[aria-label^="Play"]');
+      if (playBtn) {
+        playBtn.click();
+        window.setTimeout(() => {
+          const aria = (playBtn.getAttribute("aria-label") || "").toLowerCase();
+          if (!aria.includes("pause")) {
+            clickWithFallback(playBtn);
+          }
+        }, 120);
         showToast("Randomify: Playing track!");
-        return;
+      } else {
+        const dblClickEvent = new MouseEvent("dblclick", { bubbles: true, cancelable: true, view: window });
+        selectedRow.dispatchEvent(dblClickEvent);
+        showToast("Randomify: Playing track!");
       }
-      window.setTimeout(tick, 500);
-    }
-    tick();
+      done = true;
+      observer.disconnect();
+    });
+    observer.observe(document.documentElement, { childList: true, subtree: true });
+    window.setTimeout(() => {
+      if (!done) {
+        observer.disconnect();
+        if (retries < MAX_AUTORETRY) {
+          sessionStorage.setItem("randomify_retry", String(retries + 1));
+          showToast("Randomify: No tracks found. Retrying...");
+          chrome.runtime.sendMessage({ type: "RANDOMIZE_AND_PLAY" });
+        } else {
+          sessionStorage.setItem("randomify_retry", "0");
+          showToast("Randomify: No tracks found for this search.");
+        }
+      }
+    }, 8e3);
   }
   function init() {
     const params = new URLSearchParams(window.location.search);
     if (params.get("randomify_auto_play") === "true") {
+      if (!sessionStorage.getItem("randomify_retry")) {
+        sessionStorage.setItem("randomify_retry", "0");
+      }
       removeAutoPlayFlag();
       showToast("Randomify: Searching...");
       attemptAutoPlay();
@@ -167,13 +166,6 @@
   } else {
     init();
   }
-  chrome.runtime?.onMessage?.addListener((message, _sender, sendResponse) => {
-    if (message?.type === "RANDOMIFY_PING") {
-      sendResponse({ ok: true, ts: Date.now() });
-      return false;
-    }
-    return false;
-  });
   var injectObserver = new MutationObserver(() => {
     ensureInjectedButton();
   });

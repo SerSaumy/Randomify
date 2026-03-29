@@ -1,21 +1,26 @@
 {
   "manifest_version": 3,
   "name": "Randomify",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "True random playback for Spotify. Zero setup required.",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
-  "permissions": ["tabs", "scripting", "notifications"],
+  "permissions": ["tabs", "scripting", "storage"],
   "host_permissions": ["*://open.spotify.com/*"],
   "background": {
     "service_worker": "src/background.js"
   },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Randomify"
+    "default_title": "Randomify",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
   },
   "content_scripts": [
     {

@@ -1,11 +1,15 @@
 # Randomify
 
+<p align="center">
+  <img src="assets/icon_transparent.png" alt="Randomify" width="160" />
+</p>
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 
-**Randomify** is a Chrome extension for [Spotify Web Player](https://open.spotify.com/) that starts **true random playback** with **zero setup**.
+**Randomify** is a Chrome extension for [Spotify Web Player](https://open.spotify.com/) that starts **true random playback**.
 
-It generates a random Spotify **search query**, navigates a tab to Spotify’s search results, then uses a **content script** to physically click a random result’s **Play** button (DOM automation). No Spotify Web API, OAuth, PKCE, or backend server is used.
+It generates a random search query, navigates Spotify to that search URL, then uses a **content script** to auto-click a random result's Play button (DOM automation). No API keys, tokens, OAuth, PKCE, or backend server are required.
 
 ---
 
@@ -49,7 +53,7 @@ npm install
 You can also use the extension popup as a fallback:
 
 1. Click the Randomify extension icon.
-2. Click **Randomize**.
+2. Click **Play Random Track**.
 
 Randomify will open (or reuse) a Spotify tab, run a random search query, then automatically click Play on a random track result. A small toast in the page shows status.
 
@@ -66,6 +70,14 @@ Randomify will open (or reuse) a Spotify tab, run a random search query, then au
 | `dist/` | Zip packages, gitignored |
 
 **Scripts:** `npm run build`, `npm test`, `npm run lint`
+
+**Important:** The files Chrome actually runs live under `extension/src/` (bundled output). After you pull or edit `extension/src-src/`, run `npm run build` so `extension/src/` and `extension/manifest.json` stay in sync, then click **Reload** on `chrome://extensions`.
+
+### Extension still looks like an old version?
+
+1. Run **`npm run build`** in the repo root (updates `extension/src/*.js` and `extension/manifest.json`).
+2. On `chrome://extensions`, click **Reload** on Randomify (or **Remove** and **Load unpacked** again).
+3. Hard-refresh Spotify (`Ctrl+Shift+R`) so the content script re-injects.
 
 ---
 

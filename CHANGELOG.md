@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented in this file.
 
+## v1.0.1
+
+- Switch fully to zero-setup URL navigation + DOM auto-click architecture.
+- Background now only builds a random search URL and opens/updates a Spotify tab.
+- Content script watches search results with `MutationObserver`, chooses a random row, and clicks its play button with fallback events.
+- Remove API/token/auth requirements; keep manifest permissions minimal (`tabs`, `scripting`, `storage`).
+
 ## v1.0.0
 
 Initial release under the Randomify name.

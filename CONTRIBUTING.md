@@ -12,8 +12,10 @@ Thank you for improving Randomify. This document describes how we expect changes
 
 1. Fork the repository and create a feature branch from `main`.
 2. Implement the change with clear commit messages written as full sentences.
-3. Run `npm test` and `npm run lint`.
+3. Run `npm run build`, `npm test`, and `npm run lint`.
 4. Open a pull request that explains the user impact and any tradeoffs you considered.
+
+**Extension bundles:** If you change `extension/src-src/` or `lib/` imports, commit the updated **`extension/src/`** and **`extension/manifest.json`** output from `npm run build` so “Load unpacked” on `extension/` works for everyone without a local build.
 
 ## Releases (maintainers)
 
