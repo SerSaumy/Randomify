@@ -1,0 +1,44 @@
+{
+  "name": "randomify",
+  "version": "1.0.0",
+  "description": "Randomify: unbiased random playback for the Spotify Web Player",
+  "type": "module",
+  "scripts": {
+    "setup": "node server/setup.js",
+    "start": "node server/server.js",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:randomness": "node scripts/test-randomness-real.js",
+    "build": "node scripts/build.mjs",
+    "lint": "eslint extension/src lib server scripts tests --ext .js,.mjs"
+  },
+  "keywords": [
+    "randomify",
+    "spotify",
+    "extension",
+    "shuffle",
+    "random"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0"
+  },
+  "devDependencies": {
+    "@jest/globals": "^29.7.0",
+    "archiver": "^7.0.1",
+    "esbuild": "^0.24.0",
+    "eslint": "^8.57.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.29.1",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "jsdom": "^24.0.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": [
+      "**/tests/**/*.test.js"
+    ]
+  }
+}

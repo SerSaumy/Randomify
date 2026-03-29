@@ -1,0 +1,73 @@
+/* Uses Spotify player tokens where available for visual consistency */
+.sts-true-random {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin: 0 4px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-subdued, #b3b3b3);
+  cursor: pointer;
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.sts-true-random:hover {
+  color: var(--text-base, #ffffff);
+  transform: scale(1.06);
+}
+
+.sts-true-random:active {
+  transform: scale(0.96);
+}
+
+.sts-dice {
+  font-size: 24px;
+  line-height: 1;
+  display: inline-block;
+}
+
+.sts-spin .sts-dice {
+  animation: sts-spin 0.7s linear infinite;
+}
+
+@keyframes sts-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.sts-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 96px;
+  transform: translateX(-50%);
+  z-index: 2147483646;
+  max-width: min(420px, 92vw);
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: var(--font-family, CircularSp, Helvetica Neue, Helvetica, Arial, sans-serif);
+  color: #fff;
+  background: rgba(40, 40, 40, 0.95);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  transition: opacity 0.35s ease;
+}
+
+.sts-toast-error {
+  background: rgba(80, 20, 20, 0.95);
+}
+
+.sts-toast-success {
+  background: rgba(20, 60, 40, 0.95);
+}
+
+.sts-toast-fade {
+  opacity: 0;
+}

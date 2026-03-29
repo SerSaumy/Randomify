@@ -1,0 +1,41 @@
+{
+  "manifest_version": 3,
+  "name": "Randomify",
+  "version": "1.0.0",
+  "description": "Randomify adds unbiased random playback to the Spotify Web Player.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://open.spotify.com/*",
+    "https://api.spotify.com/*",
+    "https://accounts.spotify.com/*",
+    "http://localhost:8888/*",
+    "http://127.0.0.1:8888/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Randomify",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://open.spotify.com/*"],
+      "js": ["content.js"],
+      "css": ["content.css"]
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "default-src 'self'; connect-src 'self' https://api.spotify.com https://accounts.spotify.com http://localhost:8888 http://127.0.0.1:8888; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
+  }
+}

@@ -1,0 +1,5 @@
+node_modules/
+extension/background.js
+extension/content.js
+extension/popup.js
+coverage/
