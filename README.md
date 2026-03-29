@@ -161,6 +161,33 @@ MIT. See `LICENSE`.
 
 ---
 
+## Publish to GitHub (maintainers)
+
+Your repo is ready to push from this folder: `git` is initialized on branch `main` with an initial commit.
+
+**Option A: GitHub website**
+
+1. On GitHub, create a **new repository** (for example `randomify`). Do **not** add a README, `.gitignore`, or license there (this project already has them).
+2. In the project folder:
+
+   ```bash
+   git remote add origin https://github.com/YOUR_USERNAME/randomify.git
+   git push -u origin main
+   ```
+
+**Option B: GitHub CLI**
+
+1. Run `gh auth login` and complete sign-in.
+2. From the project folder:
+
+   ```bash
+   gh repo create randomify --public --source=. --remote=origin --push
+   ```
+
+3. After pushing, update the **clone URL** at the top of this README if you used a different name or organization.
+
+---
+
 ## Contributing
 
 See `CONTRIBUTING.md`.
