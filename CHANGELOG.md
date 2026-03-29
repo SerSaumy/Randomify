@@ -7,7 +7,7 @@ All notable changes to this project are documented in this file.
 Initial release under the Randomify name.
 
 - Chrome Manifest V3 and Firefox Manifest V2 builds
-- Local OAuth PKCE token server on port 8888
-- Multi layer random track selection with anti repetition memory
-- Content script injection with MutationObserver for Spotify Web Player SPA
-- Jest test suite for randomness, API handling, and deduplication logic
+- 100% client-side DOM automation (no Spotify Web API, OAuth, PKCE, or backend server)
+- Random search query generation with anti-repetition logic
+- Content script auto-clicks a random Play button from Spotify search results
+- Jest test suite for randomness and deduplication logic

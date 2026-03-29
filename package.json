@@ -7,7 +7,7 @@
     "build": "node scripts/build.mjs",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "test:randomness": "node scripts/test-randomness-real.js",
-    "lint": "eslint extension/src lib scripts tests --ext .js,.mjs"
+    "lint": "eslint extension/src-src lib scripts tests --ext .js,.mjs"
   },
   "keywords": [
     "randomify",

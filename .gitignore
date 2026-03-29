@@ -13,10 +13,8 @@ dist/
 *.crx
 *.xpi
 
-# OAuth and tokens (never commit)
-server/data/
+# Never commit secrets
 .tokens.json
-extension/injected-session.js
 
 # Logs and diagnostics
 *.log

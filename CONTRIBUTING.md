@@ -17,7 +17,7 @@ Thank you for improving Randomify. This document describes how we expect changes
 
 ## Security
 
-Never commit real `.env` files, token JSON, or client secrets. If you need to demonstrate configuration, use `.env.example` only.
+Never commit real `.env` files, keys, or other secrets. Randomify does not require Spotify developer credentials or tokens.
 
 ## Code review
 

@@ -1,127 +1,69 @@
-/**
- * Injects the True Random control beside Spotify player controls and keeps it
- * mounted across SPA route and layout changes.
- */
-
-const BTN_ID = 'sts-true-random-btn';
-const TOAST_ID = 'sts-toast';
-
-function getRuntime() {
-  return globalThis.browser || globalThis.chrome;
-}
-
-function findAnchor() {
-  const shuffle = document.querySelector('button[data-testid="control-button-shuffle"]');
-  if (shuffle && shuffle.parentElement) {
-    return shuffle.parentElement;
+(() => {
+  // extension/src-src/content.js
+  var TOAST_ID = "sts-toast";
+  function showToast(message) {
+    const t = document.getElementById(TOAST_ID);
+    if (t) t.remove();
+    const el = document.createElement("div");
+    el.id = TOAST_ID;
+    el.textContent = message;
+    el.style.cssText = [
+      "position:fixed",
+      "bottom:20px",
+      "right:20px",
+      "background:#1db954",
+      "color:white",
+      "padding:12px 24px",
+      "border-radius:8px",
+      "z-index:9999",
+      "font-family:sans-serif",
+      "font-weight:bold",
+      "box-shadow:0 4px 12px rgba(0,0,0,0.5)"
+    ].join("; ");
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 4e3);
   }
-  const bar = document.querySelector('[data-testid="control-bar"]') || document.querySelector('div[class*="player-controls"]');
-  return bar || null;
-}
-
-function removeToast() {
-  const t = document.getElementById(TOAST_ID);
-  if (t) {
-    t.remove();
+  function removeAutoPlayFlag() {
+    const url = new URL(window.location.href);
+    url.searchParams.delete("randomify_auto_play");
+    window.history.replaceState({}, document.title, url.toString());
   }
-}
-
-function showToast(message, variant) {
-  removeToast();
-  const el = document.createElement('div');
-  el.id = TOAST_ID;
-  el.setAttribute('role', 'status');
-  el.textContent = message;
-  el.className = `sts-toast sts-toast-${variant || 'info'}`;
-  document.body.appendChild(el);
-  window.setTimeout(() => {
-    el.classList.add('sts-toast-fade');
-    window.setTimeout(removeToast, 400);
-  }, 4200);
-}
-
-function setButtonLoading(btn, loading) {
-  if (loading) {
-    btn.classList.add('sts-spin');
-    btn.setAttribute('aria-busy', 'true');
-  } else {
-    btn.classList.remove('sts-spin');
-    btn.removeAttribute('aria-busy');
-  }
-}
-
-function createButton() {
-  const btn = document.createElement('button');
-  btn.id = BTN_ID;
-  btn.type = 'button';
-  btn.className = 'sts-true-random';
-  btn.setAttribute('aria-label', 'True Random');
-  btn.title = 'True Random — No Bias';
-  const span = document.createElement('span');
-  span.className = 'sts-dice';
-  span.setAttribute('aria-hidden', 'true');
-  span.textContent = String.fromCodePoint(0x1f3b2);
-  btn.appendChild(span);
-  return btn;
-}
-
-function inject() {
-  if (document.getElementById(BTN_ID)) {
-    return;
-  }
-  const anchor = findAnchor();
-  if (!anchor) {
-    return;
-  }
-  const btn = createButton();
-  btn.addEventListener('click', async () => {
-    setButtonLoading(btn, true);
-    try {
-      const runtime = getRuntime();
-      const res = await new Promise((resolve) => {
-        runtime.runtime.sendMessage({ type: 'TRUE_RANDOM_PLAY' }, resolve);
-      });
-      if (res?.ok) {
-        const name = res.trackName || 'Unknown track';
-        showToast(`Now playing: ${name}`, 'success');
-      } else if (res?.code === 'NOT_CONNECTED') {
-        showToast('Randomify not set up yet. Run `npm run auth` in the project folder, then reload this page.', 'error');
-      } else {
-        showToast(res?.message || 'Something went wrong.', 'error');
+  function attemptAutoPlay() {
+    let attempts = 0;
+    const maxAttempts = 15;
+    const interval = setInterval(() => {
+      attempts += 1;
+      const trackRows = document.querySelectorAll('div[data-testid="tracklist-row"]');
+      if (trackRows.length > 3) {
+        clearInterval(interval);
+        const randomIndex = Math.floor(Math.random() * trackRows.length);
+        const selectedRow = trackRows[randomIndex];
+        const playBtn = selectedRow.querySelector('button[data-testid="play-button"], button[aria-label^="Play"]');
+        if (playBtn) {
+          playBtn.click();
+          showToast("Randomify: Playing track!");
+        } else {
+          const dblClickEvent = new MouseEvent("dblclick", { bubbles: true, cancelable: true, view: window });
+          selectedRow.dispatchEvent(dblClickEvent);
+          showToast("Randomify: Playing track!");
+        }
+      } else if (attempts >= maxAttempts) {
+        clearInterval(interval);
+        showToast("Randomify: Could not find tracks to play.");
       }
-    } catch (e) {
-      showToast('Extension could not reach the background worker.', 'error');
-    } finally {
-      setButtonLoading(btn, false);
+    }, 500);
+  }
+  function init() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("randomify_auto_play") === "true") {
+      removeAutoPlayFlag();
+      showToast("Randomify: Searching...");
+      attemptAutoPlay();
     }
-  });
-  const shuffle = anchor.querySelector('button[data-testid="control-button-shuffle"]');
-  if (shuffle) {
-    shuffle.insertAdjacentElement('afterend', btn);
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
   } else {
-    anchor.appendChild(btn);
+    init();
   }
-}
-
-let scheduled = null;
-function scheduleInject() {
-  if (scheduled) {
-    window.clearTimeout(scheduled);
-  }
-  scheduled = window.setTimeout(() => {
-    scheduled = null;
-    inject();
-  }, 300);
-}
-
-const observer = new MutationObserver(() => {
-  scheduleInject();
-});
-
-observer.observe(document.documentElement, { childList: true, subtree: true });
-
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', scheduleInject);
-} else {
-  scheduleInject();
-}
+})();

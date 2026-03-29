@@ -25,15 +25,17 @@ export async function runBuild(target = 'chrome') {
   writePlaceholderIcons();
 
   const extDir = path.join(root, 'extension');
+  const srcDir = path.join(extDir, 'src-src');
+  const outDir = path.join(extDir, 'src');
 
   await esbuild.build({
     entryPoints: [
-      path.join(extDir, 'src', 'background.js'),
-      path.join(extDir, 'src', 'content.js'),
-      path.join(extDir, 'src', 'popup.js'),
+      path.join(srcDir, 'background.js'),
+      path.join(srcDir, 'content.js'),
+      path.join(srcDir, 'popup.js'),
     ],
     bundle: true,
-    outdir: extDir,
+    outdir: outDir,
     platform: 'browser',
     format: 'iife',
     target: ['chrome91', 'firefox91'],

@@ -2,36 +2,26 @@
   "manifest_version": 3,
   "name": "Randomify",
   "version": "1.0.0",
-  "description": "Randomify adds unbiased random playback to the Spotify Web Player.",
+  "description": "True random playback for Spotify. Zero setup required.",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
-  "permissions": ["activeTab", "scripting", "storage"],
-  "host_permissions": [
-    "https://open.spotify.com/*"
-  ],
+  "permissions": ["tabs", "scripting", "storage"],
+  "host_permissions": ["*://open.spotify.com/*"],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "src/background.js"
   },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Randomify",
-    "default_icon": {
-      "16": "icons/icon16.png",
-      "48": "icons/icon48.png",
-      "128": "icons/icon128.png"
-    }
+    "default_title": "Randomify"
   },
   "content_scripts": [
     {
-      "matches": ["https://open.spotify.com/*"],
-      "js": ["content.js"],
+      "matches": ["*://open.spotify.com/*"],
+      "js": ["src/content.js"],
       "css": ["content.css"]
     }
-  ],
-  "content_security_policy": {
-    "extension_pages": "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
-  }
+  ]
 }
